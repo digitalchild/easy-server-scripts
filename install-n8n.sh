@@ -280,8 +280,6 @@ EOF
 
     # Create docker-compose.yml
     cat > /opt/projects/n8n/docker-compose.yml <<EOF
-version: '3'
-
 services:
   n8n:
     image: n8nio/n8n
