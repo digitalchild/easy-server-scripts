@@ -42,7 +42,7 @@ When the script prompts for certificate files:
 - Paste the Origin Certificate when requested
 - Paste the Private Key when requested
 
-Copy the script to your server and make it executable.
+Copy the [script](install-n8n.sh) to your server and make it executable.
 
 ```bash
 chmod +x install-n8n.sh
