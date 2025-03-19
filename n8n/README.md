@@ -1,5 +1,9 @@
 # Install n8n on an Ubuntu server
 
+This script will install n8n and proxy it with nginx. It supports SSL via certbot and via cloudflare. If you're are using cloudflare, please follow the checklist below to setup the SSL/TLS settings. 
+
+A blog post about this can be found [here] (https://randomadult.com/how-to-install-n8n-with-cloudflare-ssl/)
+
 ## Prerequisites
 
 - A server running Ubuntu 22.04 or above
