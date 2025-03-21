@@ -19,12 +19,26 @@ get_server_ip() {
 check_cloudflare() {
     local domain=$1
     local nameservers=$(dig +short NS ${domain})
+    local ips=$(dig +short A ${domain})
     
+    echo "Debug: Checking Cloudflare status for ${domain}"
+    echo "Debug: Nameservers: ${nameservers}"
+    echo "Debug: IPs: ${ips}"
+    
+    # Check if using Cloudflare nameservers
     if echo "$nameservers" | grep -q "cloudflare.com"; then
+        echo "Debug: Detected Cloudflare nameservers"
         return 0 # Is Cloudflare
-    else
-        return 1 # Not Cloudflare
     fi
+    
+    # Check if resolving to Cloudflare IPs
+    if echo "$ips" | grep -qE "^(172\.67\.|104\.21\.|104\.16\.|104\.17\.|104\.18\.|104\.19\.)"; then
+        echo "Debug: Detected Cloudflare proxy (domain resolves to Cloudflare IPs)"
+        return 0 # Is Cloudflare
+    fi
+    
+    echo "Debug: Not using Cloudflare"
+    return 1 # Not Cloudflare
 }
 
 # Function to check domain DNS
@@ -38,6 +52,12 @@ check_domain_dns() {
     if check_cloudflare "$domain"; then
         echo "Detected Cloudflare nameservers for ${domain}"
         echo "Note: SSL certificate will be handled differently for Cloudflare domains"
+        
+        # Get the resolved IPs
+        local domain_ips=$(dig +short A ${domain} | grep -v "\.$" || true)
+        echo "Domain resolves to Cloudflare IPs:"
+        echo "$domain_ips"
+        echo "This is expected when using Cloudflare as a proxy"
         return 0  # Allow Cloudflare domains to proceed
     fi
     
@@ -56,14 +76,8 @@ check_domain_dns() {
         echo "Warning: Domain ${domain} resolves to different IP(s):"
         echo "$domain_ips"
         echo "Expected IP: ${server_ip}"
-        
-        # Since we detected Cloudflare IPs, we'll ask if they want to proceed
-        read -p "These appear to be Cloudflare IPs. Do you want to proceed anyway? (y/n): " proceed
-        if [[ $proceed =~ ^[Yy]$ ]]; then
-            return 0
-        else
-            return 1
-        fi
+        echo "If you are not using Cloudflare, please update your DNS records"
+        return 1
     fi
 }
 
@@ -113,7 +127,11 @@ setup_ssl() {
     local domain=$1
     local email=$2
     
+    echo "Debug: Starting SSL setup for ${domain}"
+    
+    # Explicitly check Cloudflare status
     if check_cloudflare "$domain"; then
+        echo "Debug: Cloudflare detected, showing SSL options"
         echo "Cloudflare domain detected. Please choose SSL option:"
         echo "1. Use Cloudflare Origin Certificate (recommended)"
         echo "2. Use Let's Encrypt (requires temporarily disabling Cloudflare proxy)"
@@ -147,8 +165,13 @@ setup_ssl() {
                 certbot --nginx -d ${domain} --non-interactive --agree-tos --email ${email}
                 echo "You can now re-enable Cloudflare proxy"
                 ;;
+            *)
+                echo "Invalid choice. Using Let's Encrypt..."
+                certbot --nginx -d ${domain} --non-interactive --agree-tos --email ${email}
+                ;;
         esac
     else
+        echo "Debug: No Cloudflare detected, using Let's Encrypt"
         # Standard Let's Encrypt for non-Cloudflare domains
         certbot --nginx -d ${domain} --non-interactive --agree-tos --email ${email}
     fi
@@ -231,16 +254,26 @@ install_n8n() {
     echo "Installing Docker..."
     sudo apt-get install -y ca-certificates curl gnupg
 
-    # Add Docker's official GPG key
-    sudo install -m 0755 -d /etc/apt/keyrings
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-    sudo chmod a+r /etc/apt/keyrings/docker.gpg
+    # Add Docker's official GPG key if not already present
+    if [ ! -f /etc/apt/keyrings/docker.gpg ]; then
+        echo "Adding Docker's GPG key..."
+        sudo install -m 0755 -d /etc/apt/keyrings
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+        sudo chmod a+r /etc/apt/keyrings/docker.gpg
+    else
+        echo "Docker GPG key already exists, skipping..."
+    fi
 
-    # Add the repository to Apt sources
-    echo \
-      "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-      "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
-      sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    # Add the repository to Apt sources if not already added
+    if [ ! -f /etc/apt/sources.list.d/docker.list ]; then
+        echo "Adding Docker repository..."
+        echo \
+          "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+          "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
+          sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    else
+        echo "Docker repository already configured, skipping..."
+    fi
 
     # Update package list and install Docker
     sudo apt-get update
