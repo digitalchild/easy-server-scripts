@@ -356,10 +356,10 @@ install_crawl4ai() {
 
     # Create crawl4ai directory structure
     echo "Creating crawl4ai directory structure..."
-    sudo mkdir -p /opt/projects/crawl4ai
+    sudo mkdir -p /opt/apps/crawl4ai
 
     # Create docker-compose.yml
-    cat > /opt/projects/crawl4ai/docker-compose.yml <<EOF
+    cat > /opt/apps/crawl4ai/docker-compose.yml <<EOF
 version: '3.8'
 
 services:
@@ -414,7 +414,7 @@ EOF
     setup_ssl "$DOMAIN" "$EMAIL"
 
     # Start crawl4ai
-    cd /opt/projects/crawl4ai
+    cd /opt/apps/crawl4ai
     docker-compose up -d
 
     echo -e "\n=== Installation Complete! ===\n"

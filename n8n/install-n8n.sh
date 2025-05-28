@@ -284,7 +284,7 @@ install_n8n() {
 
     # Create n8n directory structure
     echo "Creating n8n directory structure..."
-    sudo mkdir -p /opt/projects/n8n
+    sudo mkdir -p /opt/apps/n8n
 
     # Create initial nginx configuration
     echo "Creating nginx configuration..."
@@ -312,7 +312,7 @@ EOF
     setup_ssl "$DOMAIN" "$EMAIL"
 
     # Create docker-compose.yml
-    cat > /opt/projects/n8n/docker-compose.yml <<EOF
+    cat > /opt/apps/n8n/docker-compose.yml <<EOF
 services:
   n8n:
     image: n8nio/n8n
@@ -335,7 +335,7 @@ volumes:
 EOF
 
     # Start n8n
-    cd /opt/projects/n8n
+    cd /opt/apps/n8n
     docker-compose up -d
 
     echo -e "\n=== Installation Complete! ===\n"

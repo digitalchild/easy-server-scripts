@@ -67,7 +67,7 @@ After installation:
 3. Logs can be viewed with:
 
 ```bash
-cd /opt/projects/crawl4ai
+cd /opt/apps/crawl4ai
 docker-compose logs -f
 ```
 
@@ -75,7 +75,7 @@ docker-compose logs -f
 
 The installation creates the following structure:
 
-- `/opt/projects/crawl4ai/docker-compose.yml` - Docker configuration
+- `/opt/apps/crawl4ai/docker-compose.yml` - Docker configuration
 - `/etc/nginx/sites-available/your-domain.conf` - Nginx configuration
 
 ### Environment Variables
