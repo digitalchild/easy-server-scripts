@@ -41,7 +41,18 @@ cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
 
 # Set new SSH port (default: 1337)
 NEW_SSH_PORT=${1:-1337}
-sed -i "s/#Port 22/Port $NEW_SSH_PORT/" /etc/ssh/sshd_config
+mkdir -p /etc/systemd/system/ssh.socket.d
+cat > /etc/systemd/system/ssh.socket.d/override.conf << EOF
+[Socket]
+ListenStream=
+ListenStream=0.0.0.0:18765
+
+[Install]
+WantedBy=sockets.target
+EOF
+systemctl daemon-reload
+systemctl stop ssh.socket
+systemctl restart ssh.socket
 
 # Enhance SSH security
 sed -i 's/#PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
